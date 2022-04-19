@@ -1,0 +1,35 @@
+filebeat.inputs:
+- type: mqtt
+  hosts: 
+    - tcp://mqtt:1883
+  topics: 
+    - sensor-data
+  tags:
+    - mqtt
+    - iot
+    - filebeat
+  fields:
+    event.dataset: sensor-data
+    event.module: filebeat-mqtt
+    event.outcome: iot-sensors
+    event.category: sensor
+  processors:
+    - decode_json_fields:
+          fields: ["message"]
+          process_array: false
+          max_depth: 1
+          target: ""
+          overwrite_keys: false
+          add_error_key: true
+    - add_host_metadata:
+          when.not.contains.tags: forwarded
+    - add_cloud_metadata: null
+  keep_null: false
+  index: 'sensor-data-%{+yyyy-MM-dd}'
+
+output.elasticsearch:
+  hosts: ["elk:9200"]
+  # If using Elasticsearch's default certificate
+  ssl.ca_trusted_fingerprint: "<es cert fingerprint>"
+setup.kibana:
+  host: "elk:5601"

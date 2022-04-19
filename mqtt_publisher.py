@@ -1,10 +1,15 @@
 ## https://pypi.org/project/paho-mqtt/
 import paho.mqtt.client as mqtt
-import json
-import requests
-import csv
-from datetime import datetime
+import pandas as pd
 import time
+import logging
+import threading
+import json
+
+# Get dataset
+raw_data = pd.read_csv('dataset_MP.csv')
+
+sensor_type = ["L","M","H"]
 
 
 # Define Variables
@@ -18,56 +23,78 @@ MQTT_KEEPALIVE_INTERVAL = 45
 MQTT_TOPIC = "sensor-data"
 
 
-
-
 # Define on_publish event function
 def on_publish(client, userdata, mid):
-    print ("Message published with mid", mid)
+    print (client, "Message published with mid : ", mid)
 
 # The callback for when the client receives a CONNACK response from the server.
 def on_connect(client, userdata, flags, rc):
-    print("Connected to MQTT Broker with result code :: ", str(rc))
+    print(client, "Connected to MQTT Broker with result code :: ", str(rc))
     
-# The callback for when a PUBLISH message is received from the server.
-def on_message(client, userdata, msg):
-    print(msg.topic)
-    print(msg.payload) # <- do you mean this payload = {...} ?
-    payload = json.loads(msg.payload) # you can use json.loads to convert string to json
-    print(payload['asset']) # then you can check the value
-    client.disconnect() # Got message then disconnect
 
-# Initiate MQTT Client
-mqttc = mqtt.Client("mqttx_32bc19a3")
 
-# Register publish callback function
-mqttc.on_publish = on_publish
-mqttc.on_connect = on_connect
-mqttc.on_message = on_message
+# Our sensor routine
+def sensor_function(name):
+    
+    logging.info("sensor %s: starting", name)
+    
+    #Get a random sample of our raw data
+    sensor_data = raw_data[raw_data.Type==name]
+    sensor_data.drop('Product ID', inplace=True, axis=1)
+    sensor_data.reset_index()
 
-# Connect with MQTT Broker
-print('cici')
-mqttc.connect(MQTT_HOST, MQTT_PORT, MQTT_KEEPALIVE_INTERVAL)
-print('caca')
+    # Initiate MQTT Client
+    mqttc = mqtt.Client(name)
 
-# Blocking call that processes network traffic, dispatches callbacks and
-# handles reconnecting.
-# Other loop*() functions are available that give a threaded interface and a
-# manual interface.
-# Loop forever
-mqttc.loop_start()
-# Get a sample dataset
-with open('dataset_MP.csv', 'r') as read_obj:
-    raw_data = csv.DictReader(read_obj)
-    for row in raw_data:
-        # row variable is a list that represents a row in csv
-        print("waiting 3.5 s")
+    # Register publish callback function
+    mqttc.on_publish = on_publish
+    mqttc.on_connect = on_connect
+
+    mqttc.connect(MQTT_HOST, MQTT_PORT, MQTT_KEEPALIVE_INTERVAL)
+
+    mqttc.loop_start()
+
+    for index, row in sensor_data.iterrows():
+        json_data = json.loads(row.to_json())
         time.sleep(3.5)
-        print("sending data")
-        print(row)
-        mqttc.publish(MQTT_TOPIC, json.dumps(row))
+        print(json.dumps(json_data))
+        mqttc.publish(MQTT_TOPIC, json.dumps(json_data))
 
-mqttc.loop_stop()
-mqttc.disconnect()
+    mqttc.loop_stop()
+    mqttc.disconnect()
+    
+    logging.info("sensor %s: finishing", name)
+
+if __name__ == "__main__":
+    format = "%(asctime)s: %(message)s"
+    logging.basicConfig(format=format, level=logging.INFO,
+                        datefmt="%H:%M:%S")
+
+    threads = list()
+    for index in sensor_type:
+        logging.info("Main    : create and start sensor %s.", index)
+        x = threading.Thread(target=sensor_function, args=(index,))
+        threads.append(x)
+        x.start()
+
+    for index, sensor in enumerate(threads):
+        logging.info("Main    : before joining sensor %s.", index)
+        sensor.join()
+        logging.info("Main    : sensor %s done", index)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
