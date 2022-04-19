@@ -1,0 +1,26 @@
+version: "3"
+services:
+  elk:
+    image: sebp/elk
+    container_name: elk
+    ports:
+      - "5601:5601"
+      - "9200:9200"
+      - "5044:5044"
+  filebeat:
+    image: docker.elastic.co/beats/filebeat:8.1.2
+    user: root
+    depends_on: 
+      - mqtt
+      - elk
+    entrypoint: "filebeat -e -strict.perms=false"
+    volumes:
+      - ./filebeat.docker.yml:/usr/share/filebeat/filebeat.yml
+  mqtt:
+    image : eclipse-mosquitto
+    container_name: mqtt
+    volumes:
+      - ./mosquitto.conf:/mosquitto/config/mosquitto.conf
+    ports:
+      - "1883:1883"
+      - "9001:9001"
