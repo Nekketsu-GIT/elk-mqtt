@@ -5,9 +5,20 @@ import time
 import logging
 import threading
 import json
+from sklearn.utils import resample
+
 
 # Get dataset
-raw_data = pd.read_csv('dataset_MP.csv')
+raw_data = pd.read_csv('resamples_dataset.csv')
+
+raw_data.reset_index()
+
+raw_data['Machine failure'] = raw_data['Machine failure'].astype('bool')
+raw_data['TWF'] = raw_data['TWF'].astype('bool')
+raw_data['HDF'] = raw_data['HDF'].astype('bool')
+raw_data['PWF'] = raw_data['PWF'].astype('bool')
+raw_data['OSF'] = raw_data['OSF'].astype('bool')
+raw_data['RNF'] = raw_data['RNF'].astype('bool')
 
 sensor_type = ["L","M","H"]
 
