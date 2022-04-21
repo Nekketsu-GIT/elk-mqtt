@@ -17,9 +17,10 @@ To achieve it we use Docker, elastic and mqtt. Our script simulate sensors sendi
   
   Our dataset have a little problem, it suffers a lack of data with machine failure at true. But don't worry there are some ways to handle it, we use upsampling method.
   So a script is created to obtain a new dataset. To run it:
-    - Run `python -m venv env`
-    - Run `.\env\Script\activate`
-    - Run `pip install -r requirements.txt`
+  - Run `python -m venv env`
+  - Run `.\env\Script\activate`
+  - Run `pip install -r requirements.txt`
+  - Run `python resample.py`
     
 
     
