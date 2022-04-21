@@ -31,7 +31,8 @@ MQTT_HOST = "localhost"
 MQTT_PORT = 1883
 MQTT_KEEPALIVE_INTERVAL = 45
 # Name of the tpoc where data will be pushed inside the MQTT Broker
-MQTT_TOPIC = "sensor-data"
+#MQTT_TOPIC = "sensor-data"
+MQTT_TOPIC = "sensor-data-test"
 
 
 # Define on_publish event function
@@ -42,10 +43,14 @@ def on_publish(client, userdata, mid):
 def on_connect(client, userdata, flags, rc):
     print(client, "Connected to MQTT Broker with result code :: ", str(rc))
     
-
+def on_message(client, userdata, message):
+    mqttc.disconnect()
+    
 
 # Our sensor routine
 def sensor_function(name):
+    
+
     
     logging.info("sensor %s: starting", name)
     
@@ -56,7 +61,8 @@ def sensor_function(name):
 
     # Initiate MQTT Client
     mqttc = mqtt.Client(name)
-
+    mqttc.subscribe("stop")
+    
     # Register publish callback function
     mqttc.on_publish = on_publish
     mqttc.on_connect = on_connect
